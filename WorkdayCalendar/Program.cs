@@ -46,30 +46,6 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1"
     });
 
-    // Add Authorization header to Swagger UI
-    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        In = ParameterLocation.Header,
-        Scheme = "Bearer",
-        Description = "Enter your JWT token"
-    });
-
-    options.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
-        {
-            new OpenApiSecurityScheme
-            {
-                Reference = new OpenApiReference
-                {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            new string[] { }
-        }
-    });
 });
 
 var app = builder.Build();
