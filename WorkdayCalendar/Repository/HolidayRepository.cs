@@ -18,14 +18,21 @@ namespace WorkdayCalendar.Repository
             return await dbSet.OrderBy(h => h.Date).ToListAsync();
         }
 
-        public Task<IEnumerable<Holiday>> GetFixedHolidaysAsync()
+        public async Task<IEnumerable<Holiday>> GetFixedHolidaysAsync()
         {
-            throw new NotImplementedException();
-        }
+            try
+            {
+                var fixedHolidays = await dbSet
+                  .Where(h => !h.IsRecurring)
+                  .ToListAsync();
 
-        public Task<IEnumerable<Holiday>> GetHolidaysByDateAsync(DateTime date)
-        {
-            throw new NotImplementedException();
+                return fixedHolidays;
+            }
+            catch (Exception ex)
+            {
+
+                throw ex; // Rethrow or handle the error as needed
+            }
         }
 
         public async Task<IEnumerable<Holiday>> GetRecurringHolidaysAsync()

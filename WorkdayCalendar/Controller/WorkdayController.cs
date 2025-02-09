@@ -48,7 +48,7 @@ namespace WorkdayCalendar.Controllers
 
                 // Get the date format from appsettings.json
                 var dateFormat = _configuration.GetValue<string>("DateFormat");
-                // Return the result as a formatted string
+                // Return the result as formatted string
                 return Ok(new { Result = result?.ToString(dateFormat) });
             }
             catch (Exception ex)

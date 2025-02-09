@@ -7,11 +7,13 @@ namespace WorkdayCalendar.Service
     {
         private readonly IConfiguration _configuration;
 
+        // Dependency Injection for Configuration
         public WorkdayService(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
+        // Main method to calculate the workday
         public async Task<DateTime?> CalculateWorkday(WorkdayCalculation request)
         {
             DateTime resultDateTime = request.StartDateTime;
@@ -19,6 +21,8 @@ namespace WorkdayCalendar.Service
 
             try
             {
+
+                // If working hours are not defined, get the default values from configurations
 
                 if (request.WorkingHours == null)
                 {
@@ -28,16 +32,15 @@ namespace WorkdayCalendar.Service
                 if (request.WorkingHours.Start == TimeSpan.Zero)  // Check if Start time is 00:00:00
                 {
                     var workHoursStartString = _configuration.GetValue<string>("WorkdaySettings:WorkingHours:Start");
-                    request.WorkingHours.Start = TimeSpan.Parse(workHoursStartString);  // Assign default Start
+                    request.WorkingHours.Start = TimeSpan.Parse(workHoursStartString);  // Assign default Start time
                 }
 
-                if (request.WorkingHours.End == TimeSpan.Zero) // Check if Start end is 00:00:00
+                if (request.WorkingHours.End == TimeSpan.Zero) // Check if  End time is 00:00:00
                 {
                     var workHoursEndString = _configuration.GetValue<string>("WorkdaySettings:WorkingHours:End");
-                    request.WorkingHours.End = TimeSpan.Parse(workHoursEndString);  // Assign default End
+                    request.WorkingHours.End = TimeSpan.Parse(workHoursEndString);  // Assign default End time
                 }
 
-                // Special case handling for the two specific scenarios
                 if (resultDateTime.TimeOfDay < request?.WorkingHours?.Start)
                 {
                     // Adjust time to the start of the working day
@@ -50,12 +53,10 @@ namespace WorkdayCalendar.Service
                 }
 
                 double remainingDays = request.WorkingDays;
-                Console.WriteLine($"Initial Date: {resultDateTime}, Remaining Days: {remainingDays}");
 
                 // Handle adding or subtracting working days
                 while (Math.Abs(remainingDays) > 0.01) // Prevent infinite loops
                 {
-                    Console.WriteLine($"Checking Date: {resultDateTime}, Remaining Days: {remainingDays}");
 
                     try
                     {
@@ -68,7 +69,6 @@ namespace WorkdayCalendar.Service
 
                                 resultDateTime = resultDateTime.AddHours(workingHours);
                                 remainingDays -= workingHours / 8; // Subtracting full days
-                                Console.WriteLine($"Added {workingHours} hours, New Date: {resultDateTime}, Remaining Days: {remainingDays}");
                             }
                             else if (remainingDays < 0) // Subtracting working days
                             {
@@ -76,7 +76,7 @@ namespace WorkdayCalendar.Service
 
                                 if (remainingWorkHours < 0)
                                 {
-                                    // If starting before working hours, move to previous working day's end time
+                                    // If starting before working hours, move to previous working days end time
                                     resultDateTime = MoveToPreviousWorkingDay(resultDateTime, holidays, request.WorkingHours.Start, request.WorkingHours.End);
                                     remainingWorkHours = (resultDateTime.TimeOfDay - request.WorkingHours.Start).TotalHours;
                                 }
@@ -101,13 +101,11 @@ namespace WorkdayCalendar.Service
                         if (resultDateTime.TimeOfDay >= request.WorkingHours.End && remainingDays > 0)
                         {
                             resultDateTime = MoveToNextWorkingDay(resultDateTime, holidays, request.WorkingHours.Start);
-                            Console.WriteLine($"Moved to next working day: {resultDateTime}");
                         }
                         else if (resultDateTime.TimeOfDay < request.WorkingHours.Start && remainingDays < 0)
                         {
                             // Move to the previous working day when subtracting
                             resultDateTime = MoveToPreviousWorkingDay(resultDateTime, holidays, request.WorkingHours.Start, request.WorkingHours.End);
-                            Console.WriteLine($"Moved to previous working day: {resultDateTime}");
                         }
 
                         // Exit condition: If remainingDays is essentially zero or very small
@@ -124,7 +122,6 @@ namespace WorkdayCalendar.Service
                     }
                 }
 
-                Console.WriteLine($"Final Date: {resultDateTime}");
                 return resultDateTime;
             }
             catch (Exception ex)
@@ -169,7 +166,6 @@ namespace WorkdayCalendar.Service
                     previousDay = previousDay.AddDays(-1);
                 }
 
-                // Ensure the correct offset for subtracting hours
                 return previousDay.Date + workingEndTime;
             }
             catch (Exception ex)

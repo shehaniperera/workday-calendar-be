@@ -23,6 +23,15 @@ namespace WorkdayCalendar.Repository
 
         public virtual async Task<bool> Add(T entity)
         {
+
+            var existingEntity = await dbSet.FirstOrDefaultAsync(e => e.Equals(entity));
+
+            // If the entity exists - false
+            if (existingEntity != null)
+            {
+                return false;
+            }
+
             await dbSet.AddAsync(entity);
             await context.SaveChangesAsync();
             return true;
