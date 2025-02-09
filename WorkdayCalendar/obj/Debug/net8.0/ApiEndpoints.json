@@ -1,0 +1,102 @@
+[
+  {
+    "ContainingType": "WorkdayCalendar.Controllers.AuthController",
+    "Method": "Login",
+    "RelativePath": "api/Auth/Login",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "login",
+        "Type": "UserLoginModel",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WorkdayCalendar.Controllers.HolidayController",
+    "Method": "AddHoliday",
+    "RelativePath": "api/Holiday/AddHoliday",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "holiday",
+        "Type": "WorkdayCalendar.Models.Holiday",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WorkdayCalendar.Controllers.HolidayController",
+    "Method": "GetAllHolidays",
+    "RelativePath": "api/Holiday/GetHolidays",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WorkdayCalendar.Controllers.HolidayController",
+    "Method": "GetHolidaysById",
+    "RelativePath": "api/Holiday/GetHolidaysById",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Guid",
+        "IsRequired": false
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WorkdayCalendar.Controllers.HolidayController",
+    "Method": "GetRecurringHolidays",
+    "RelativePath": "api/Holiday/GetRecurringHolidays",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WorkdayCalendar.Controllers.HolidayController",
+    "Method": "UpdateHoliday",
+    "RelativePath": "api/Holiday/UpdateHoliday",
+    "HttpMethod": "PATCH",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "holiday",
+        "Type": "WorkdayCalendar.Models.Holiday",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "WorkdayCalendar.Controllers.WorkdayController",
+    "Method": "CalculateWorkday",
+    "RelativePath": "api/Workday/CalculateWorkDay",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "request",
+        "Type": "WorkdayCalendar.Models.WorkdayCalculation",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  }
+]

@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: workdaycalendar_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: workdaycalendar_db
+    ports:
+      - "5432:5432"  # Exposing PostgreSQL to localhost:5432
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - workdaycalendar-network
+
+volumes:
+  postgres_data:  # This ensures data persists even when the container is stopped
+
+networks:
+  workdaycalendar-network:
+    driver: bridge
