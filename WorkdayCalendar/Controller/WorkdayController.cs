@@ -23,7 +23,6 @@ namespace WorkdayCalendar.Controllers
         }
 
         [HttpPost("CalculateWorkDay")]
-        //[Authorize]
         public async Task<IActionResult> CalculateWorkday([FromBody] WorkdayCalculation request)
         {
             // Check if the request is null
