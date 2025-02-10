@@ -1,7 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using WorkdayCalendar.IService;
 using WorkdayCalendar.Models;
-using WorkdayCalendar.Service;
 using WorkdayCalendar.Utilities; 
 
 namespace WorkdayCalendar.Controllers
@@ -10,55 +9,51 @@ namespace WorkdayCalendar.Controllers
     [ApiController]
     public class WorkdayController : ControllerBase
     {
-        private readonly WorkdayService _workdayService;
+        private readonly IWorkdayCalculationService _workdayService;
         private readonly ILogger<WorkdayController> _logger;
         private readonly IConfiguration _configuration;
+        private readonly IWorkdayValidationService _validationService;
+        private readonly IErrorHandlingService _handleExceptionAsync;
 
-        // WorkdayService and ILogger
-        public WorkdayController(WorkdayService workdayService, ILogger<WorkdayController> logger, IConfiguration configuration)
+        // WorkdayService ,  ILogger , Validation service , Error Handling service
+        public WorkdayController(IWorkdayCalculationService workdayService, ILogger<WorkdayController> logger, IConfiguration configuration, IWorkdayValidationService validationService, IErrorHandlingService handleExceptionAsync)
         {
             _workdayService = workdayService;
             _logger = logger;
             _configuration = configuration;
+            _validationService = validationService;
+            _handleExceptionAsync = handleExceptionAsync;
         }
+
 
         [HttpPost("CalculateWorkDay")]
         public async Task<IActionResult> CalculateWorkday([FromBody] WorkdayCalculation request)
         {
-            // Check if the request is null
-            if (request == null)
-                return BadRequest("Invalid request.");
 
-            // Check for validation errors
-            if (!ModelState.IsValid)
+            var valid = await _validationService.ValidateWorkdayRequest(request, out var validationErrors);
+
+            // Validate the request
+            if (!valid)
             {
-                return BadRequest(ModelState); // Return validation errors
+                return BadRequest(validationErrors); // Return validation errors
             }
 
             try
             {
-                // Invoke the service to calculate the result
+                // calculate workday
                 var result = await _workdayService.CalculateWorkday(request);
 
                 if (result == null)
                 {
-                    // In case the result is null
                     return StatusCode(500, Constants.ExceptionMessages.WorkdayCalculationError);
                 }
 
-                // Get the date format from appsettings.json
                 var dateFormat = _configuration.GetValue<string>("DateFormat");
-                // Return the result as formatted string
                 return Ok(new { Result = result?.ToString(dateFormat) });
             }
             catch (Exception ex)
             {
-                // Log the exception details for troubleshooting
-                _logger.LogError($"{Constants.ExceptionMessages.CalculationException}: {ex.Message}, StackTrace: {ex.StackTrace}");
-
-                // Return a 500 status code with a detailed error message
-                string errorText = $"Error Code: {(int)Constants.ErrorCodes.InternalServerError}, Message: {Constants.ExceptionMessages.InternalServerError}.";
-                return StatusCode(500, errorText);
+                return await _handleExceptionAsync.HandleExceptionAsync(ex);
             }
         }
     }

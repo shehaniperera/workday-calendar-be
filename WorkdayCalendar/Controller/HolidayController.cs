@@ -1,6 +1,7 @@
-﻿
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
+using WorkdayCalendar.Exceptions;
 using WorkdayCalendar.IRepository;
+using WorkdayCalendar.IService;
 using WorkdayCalendar.Models;
 using WorkdayCalendar.Utilities;
 
@@ -10,257 +11,115 @@ namespace WorkdayCalendar.Controllers
     [ApiController]
     public class HolidayController : ControllerBase
     {
-        private readonly IHolidayRepository _holidayRepository;
-        private readonly ILogger<HolidayController> _logger;
+        private readonly IHolidayService _holidayService;
 
-        // HolidayService and ILogger
-        public HolidayController(IHolidayRepository holidayRepository, ILogger<HolidayController> logger)
+        // Constructor to inject the HolidayService
+        public HolidayController(IHolidayService holidayService)
         {
-            _holidayRepository = holidayRepository;
-            _logger = logger;
+            _holidayService = holidayService;
         }
-
-
 
         [HttpPost("AddHoliday")]
         public async Task<ActionResult> AddHoliday([FromBody] Holiday holiday)
         {
-            // Check if the request is null
-            if (holiday == null)
-                return BadRequest(Constants.ExceptionMessages.InvalidRequest);
 
-            // Check for validation errors
+            if (holiday == null)
+            {
+                return BadRequest(new { message = "Holiday cannot be null" });
+            }
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState); // Return validation errors
             }
 
-            try
+            var result = await _holidayService.AddHolidayAsync(holiday);
+
+            if (result)
             {
-                var result = await _holidayRepository.Add(holiday);
-
-                if (result)
-                {
-                    // Return success message
-                    return Ok(new { message = Constants.SucccessMessages.AddHolidaySucessMessage });
-                }
-                else
-                {
-                    return BadRequest();
-                }
-
-               
+                return Ok(new { message = Constants.SucccessMessages.AddHolidaySucessMessage });
             }
-            catch (Exception ex)
+            else
             {
-
-                // Log the exception details
-                _logger.LogError($"{Constants.ExceptionMessages.ExceptionError}: {ex.Message}, StackTrace: {ex.StackTrace}");
-
-                // Return a 500 status code with a detailed error message
-                string errorText = $"Error Code: {(int)Constants.ErrorCodes.InternalServerError}, Message: {Constants.ExceptionMessages.InternalServerError}.";
-                return StatusCode(500, errorText);
-
+                return Conflict(new { message = Constants.ExceptionMessages.HolidayExistsError });
             }
         }
-
 
         [HttpGet("GetHolidays")]
         public async Task<ActionResult> GetAllHolidays()
         {
-           
-            try
+            var result = await _holidayService.GetAllHolidaysAsync();
+
+            if (result == null || !result.Any())
             {
-                var result = await _holidayRepository.GetAllAsync();
-
-                // Check if the result is null or empty
-                if (result == null || !result.Any())
-                {
-                    // Return 204 No Content if no holidays are found
-                    return NoContent();  // No holidays, but the request was successful
-                }
-
-                // Return result
-                return Ok(new
-                {
-                    Result = result,
-                    Count = result.Count()  // Return the count of holidays
-                });
+                return NoContent();
             }
-            catch (Exception ex)
-            {
-                // Log the exception details
-                _logger.LogError($"{Constants.ExceptionMessages.ExceptionError}: {ex.Message}, StackTrace: {ex.StackTrace}");
 
-                // Return a 500 status code with a detailed error message
-                string errorText = $"Error Code: {(int)Constants.ErrorCodes.InternalServerError}, Message: {Constants.ExceptionMessages.InternalServerError}.";
-                return StatusCode(500, errorText);
-
-            }
+            // Return holidays with count
+            return Ok(new { Result = result, Count = result.Count() });
         }
-
 
         [HttpGet("GetHolidaysById")]
         public async Task<ActionResult> GetHolidaysById(Guid id)
         {
-
-            try
-            {
-
-                var result = await _holidayRepository.GetByIdAsync(id);
-
-                // Check if the result is null or empty
-                if (result == null)
-                {
-                    // Return 204 No Content if no holidays are found
-                    return NoContent();  // No holidays, but the request was successful
-                }
-
-                // Return result
-                return Ok(new { Result = result });
-            }
-            catch (Exception ex)
-            {
-
-                // Log the exception details
-                _logger.LogError($"{Constants.ExceptionMessages.ExceptionError}: {ex.Message}, StackTrace: {ex.StackTrace}");
-
-                // Return a 500 status code with a detailed error message
-                string errorText = $"Error Code: {(int)Constants.ErrorCodes.InternalServerError}, Message: {Constants.ExceptionMessages.InternalServerError}.";
-                return StatusCode(500, errorText);
-            }
+            var result = await _holidayService.GetHolidayByIdAsync(id);
+            return Ok(new { Result = result });
         }
 
+        [HttpDelete("DeleteHoliday")]
+        public async Task<ActionResult> DeleteHoliday(Guid id)
+        {
+            var result = await _holidayService.DeleteHolidayAsync(id);
+
+            if (result)
+            {
+                return Ok(new { message = Constants.SucccessMessages.DeleteHolidaySucessMessage });
+            }
+
+            return NotFound(new { message = Constants.ExceptionMessages.HolidayNotFoundError });
+        }
 
         [HttpPatch("UpdateHoliday")]
         public async Task<ActionResult> UpdateHoliday([FromBody] Holiday holiday)
         {
-            // Check if the request is null
             if (holiday == null)
                 return BadRequest(Constants.ExceptionMessages.InvalidRequest);
 
-            // Check for validation errors
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState); // Return validation errors
             }
 
-            try
-            {
-                await _holidayRepository.Update(holiday);
+            var result = await _holidayService.UpdateHolidayAsync(holiday);
 
-                // Return success message
+            if (result)
+            {
                 return Ok(new { message = Constants.SucccessMessages.UpdateHolidaySucessMessage });
             }
-            catch (Exception ex)
+            else
             {
-                // Log the exception details for troubleshooting
-                _logger.LogError($"{Constants.ExceptionMessages.ExceptionError}: {ex.Message}, StackTrace: {ex.StackTrace}");
-
-                // Return a 500 status code with a detailed error message
-                string errorText = $"Error Code: {(int)Constants.ErrorCodes.InternalServerError}, Message: {Constants.ExceptionMessages.InternalServerError}.";
-                return StatusCode(500, errorText);
-
+                return NotFound(new { message = Constants.ExceptionMessages.HolidayNotFoundError });
             }
         }
-
 
         [HttpGet("GetRecurringHolidays")]
         public async Task<ActionResult> GetRecurringHolidays()
         {
+            var result = await _holidayService.GetRecurringHolidaysAsync();
 
-            try
+            if (result == null || !result.Any())
             {
-
-                var result = await _holidayRepository.GetRecurringHolidaysAsync();
-
-                // Check if result is null or empty
-                if (result == null || !result.Any())
-                {
-                    // Return 404 Not Found if no recurring holidays exist
-                    return NotFound(new { message = Constants.ExceptionMessages.RecurringHolidayRetrievalError });
-                }
-
-                // Return result
-                return Ok(new { Result = result });
+                return NoContent();
             }
-            catch (Exception ex)
-            {
-                // Log the exception details
-                _logger.LogError($"{Constants.ExceptionMessages.ExceptionError}: {ex.Message}, StackTrace: {ex.StackTrace}");
 
-                // Return a 500 status code with a detailed error message
-                string errorText = $"Error Code: {(int)Constants.ErrorCodes.InternalServerError}, Message: {Constants.ExceptionMessages.InternalServerError}.";
-                return StatusCode(500, errorText);
-
-            }
+            return new OkObjectResult(new { Result = result, Count = result.Count() });
         }
-
-
 
         [HttpGet("GetFixedHolidays")]
         public async Task<ActionResult> GetFixedHolidays()
         {
-
-            try
-            {
-
-                var result = await _holidayRepository.GetFixedHolidaysAsync();
-
-                // Check if result is null or empty
-                if (result == null || !result.Any())
-                {
-                    // Return 404 Not Found if no recurring holidays exist
-                    return NotFound(new { message = Constants.ExceptionMessages.FixedHolidayRetrievalError });
-                }
-
-                // Return result
-                return Ok(new { Result = result });
-            }
-            catch (Exception ex)
-            {
-                // Log the exception details
-                _logger.LogError($"{Constants.ExceptionMessages.ExceptionError}: {ex.Message}, StackTrace: {ex.StackTrace}");
-
-                // Return a 500 status code with a detailed error message
-                string errorText = $"Error Code: {(int)Constants.ErrorCodes.InternalServerError}, Message: {Constants.ExceptionMessages.InternalServerError}.";
-                return StatusCode(500, errorText);
-
-            }
+            var result = await _holidayService.GetFixedHolidaysAsync();
+            return new OkObjectResult(new { Result = result, Count = result.Count() });
         }
-
-
-        [HttpDelete("DeleteHoliday")]
-        public async Task<ActionResult> DeleteHoliday(Guid id)
-        {
-
-            try
-            {
-                var result = await _holidayRepository.DeleteAsync(id);
-
-                if (result)
-                {
-                    // Return success message
-                    return Ok(new { message = Constants.SucccessMessages.DeleteHolidaySucessMessage });
-                }
-                else
-                {
-                    return BadRequest();
-                }
-
-               
-            }
-            catch (Exception ex)
-            {
-                // Log the exception details for troubleshooting
-                _logger.LogError($"{Constants.ExceptionMessages.ExceptionError}: {ex.Message}, StackTrace: {ex.StackTrace}");
-
-                // Return a 500 status code with a detailed error message
-                string errorText = $"Error Code: {(int)Constants.ErrorCodes.InternalServerError}, Message: {Constants.ExceptionMessages.InternalServerError}.";
-                return StatusCode(500, errorText);
-
-            }
-        }
-
     }
 }

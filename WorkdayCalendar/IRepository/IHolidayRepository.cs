@@ -7,5 +7,6 @@ namespace WorkdayCalendar.IRepository
     {
         Task<IEnumerable<Holiday>> GetFixedHolidaysAsync();
         Task<IEnumerable<Holiday>> GetRecurringHolidaysAsync();
+        Task<Holiday> GetByDateNameAsync(DateTime date, string name);
     }
 }

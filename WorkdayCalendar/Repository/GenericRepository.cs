@@ -1,77 +1,52 @@
-﻿using WorkdayCalendar.IRepository;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using WorkdayCalendar.Data;
+using WorkdayCalendar.IRepository;
 
-namespace WorkdayCalendar.Repository
+public class GenericRepository<T> : IGenericRepository<T> where T : class
 {
-    /// <summary>
-    /// Class implementation for generic repository
-    /// </summary>
-    /// <typeparam name="T"></typeparam>
-    public class GenericRepository<T> : IGenericRepository<T> where T : class
+    protected readonly WorkdayCalendarDBContext context;
+    internal readonly DbSet<T> dbSet;
+
+    public GenericRepository(WorkdayCalendarDBContext context)
     {
+        this.context = context;
+        this.dbSet = context.Set<T>();
+    }
 
-        protected WorkdayCalendarDBContext context;
-        internal DbSet<T> dbSet;
+    public virtual async Task<bool> Add(T entity)
+    {
+        var existingEntity = await dbSet.FirstOrDefaultAsync(e => e.Equals(entity));
+        if (existingEntity != null) return false;
 
-        public GenericRepository(WorkdayCalendarDBContext context)
-        {
-            this.context = context;
-            this.dbSet = context.Set<T>();
+        await dbSet.AddAsync(entity);
+        await context.SaveChangesAsync();
+        return true;
+    }
 
-        }
+    public virtual async Task<bool> DeleteAsync(Guid id)
+    {
+        var entity = await dbSet.FindAsync(id);
+        if (entity == null) return false;
 
-        public virtual async Task<bool> Add(T entity)
-        {
+        dbSet.Remove(entity);
+        await context.SaveChangesAsync();
+        return true;
+    }
 
-            var existingEntity = await dbSet.FirstOrDefaultAsync(e => e.Equals(entity));
+    public virtual async Task<IEnumerable<T>> GetAllAsync()
+    {
+        return await dbSet.AsNoTracking().ToListAsync();
+    }
 
-            // If the entity exists - false
-            if (existingEntity != null)
-            {
-                return false;
-            }
+    public virtual async Task<T> GetByIdAsync(Guid id)
+    {
+        return await dbSet.FindAsync(id);
+    }
 
-            await dbSet.AddAsync(entity);
-            await context.SaveChangesAsync();
-            return true;
-        }
-
-        public virtual async Task<bool> DeleteAsync(Guid id)
-        {
-            var entity = await dbSet.FindAsync(id);
-            if (entity == null)
-            {
-                return false; // Entity not found
-            }
-
-            dbSet.Remove(entity);
-            await context.SaveChangesAsync();
-            return true;
-        }
-
-        public virtual async Task<IEnumerable<T>> GetAllAsync()
-        {
-            return await dbSet.ToListAsync();
-        }
-
-        public virtual async Task<T> GetByIdAsync(Guid id)
-        {
-            return await dbSet.FindAsync(id);
-        }
-
-        public virtual async Task<T> Update(T entity)
-        {
-            if (entity == null)
-            {
-                return null; // Return null if entity is invalid
-            }
-
-            dbSet.Update(entity);
-            await context.SaveChangesAsync();
-
-            return entity; // Return the updated entity
-
-        }
+    public virtual async Task<bool> Update(T entity)
+    {
+        dbSet.Update(entity);
+        await context.SaveChangesAsync();
+        return true;
     }
 }

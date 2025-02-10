@@ -1,59 +1,26 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.OpenApi.Models;
-using WorkdayCalendar.Data;
-using WorkdayCalendar.IRepository;
-using WorkdayCalendar.Repository;
-using WorkdayCalendar.Service;
+﻿using WorkdayCalendar.Configuration;
+using WorkdayCalendar.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// DbContext registry
-builder.Services.AddDbContext<WorkdayCalendarDBContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+// Services, DbContext Registry
+builder.Services.AddServices(builder.Configuration);
 
-// services registry
-builder.Services.AddScoped<IHolidayRepository, HolidayRepository>();
+//  CORS policy config
+builder.Services.AddCorsPolicy(builder.Configuration);
 
-var AppUrl = builder.Configuration["AppUrl"];
+// Swagger
+builder.Services.AddSwagger();
 
-// Add CORS policy
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowReactApp", builder =>
-    {
-        builder.WithOrigins(AppUrl)
-            .AllowAnyMethod()
-            .AllowAnyHeader();
-    });
-});
-
-// controllers
+// Controllers Registry
 builder.Services.AddControllers();
-
-builder.Services.AddSingleton<WorkdayService>();
-
-//  Swagger for API documentation
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(options =>
-{
-    options.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title = "Workday Calendar API",
-        Version = "v1"
-    });
-
-});
 
 var app = builder.Build();
 
-// Get the current environment
-var env = app.Environment;
-
-if (env.IsDevelopment())
+// Enable Swagger for Development Env
+if (app.Environment.IsDevelopment())
 {
-    // Enable Swagger
     app.UseSwagger();
-    // Enable Swagger UI
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Workday Calendar API v1");
@@ -61,12 +28,13 @@ if (env.IsDevelopment())
     });
 }
 
-
-// Enable CORS
+// Enable CORS policy
 app.UseCors("AllowReactApp");
 
-// Map controllers for endpoint handling
+// Midldleware to handle global errors
+app.UseMiddleware<GlobalErrorHandlingMiddleware>();
+
+// Map controllers to routes
 app.MapControllers();
 
-// Run the application
 app.Run();
