@@ -46,15 +46,21 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
+// Get the current environment
+var env = app.Environment;
 
-// Enable Swagger
-app.UseSwagger();
-// Enable Swagger UI
-app.UseSwaggerUI(c =>
+if (env.IsDevelopment())
 {
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "Workday Calendar API v1");
-    c.RoutePrefix = "swagger"; 
-});
+    // Enable Swagger
+    app.UseSwagger();
+    // Enable Swagger UI
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/v1/swagger.json", "Workday Calendar API v1");
+        c.RoutePrefix = "swagger";
+    });
+}
+
 
 // Enable CORS
 app.UseCors("AllowReactApp");

@@ -6,14 +6,16 @@ namespace WorkdayCalendar.Service
     public class WorkdayService : IWorkdayService
     {
         private readonly IConfiguration _configuration;
+        private readonly ILogger<WorkdayService> _logger;
 
-        // Dependency Injection for Configuration
-        public WorkdayService(IConfiguration configuration)
+        // inject config
+        public WorkdayService(IConfiguration configuration, ILogger<WorkdayService> logger)
         {
             _configuration = configuration;
+            _logger = logger;
         }
 
-        // Main method to calculate the workday
+        // method to calculate the workday
         public async Task<DateTime?> CalculateWorkday(WorkdayCalculation request)
         {
             DateTime resultDateTime = request.StartDateTime;
@@ -94,7 +96,7 @@ namespace WorkdayCalendar.Service
                         }
                         else
                         {
-                            Console.WriteLine("Not a working day. Skipping to next day.");
+                            _logger.LogInformation("Not a working day. Skipping to next day.");
                         }
 
                         // If adding working days and current time is beyond working hours, move to the next working day
@@ -111,13 +113,12 @@ namespace WorkdayCalendar.Service
                         // Exit condition: If remainingDays is essentially zero or very small
                         if (Math.Abs(remainingDays) < 0.1) // Adjusting precision to exit the loop
                         {
-                            Console.WriteLine("Remaining days are small enough to exit the loop.");
                             break;
                         }
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine($"Error during day calculation: {ex.Message}");
+                        _logger.LogError(ex, "Not a working day. Skipping to next day.");
                         return DateTime.MinValue; // Return invalid date to indicate error
                     }
                 }
@@ -126,7 +127,7 @@ namespace WorkdayCalendar.Service
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"An unexpected error occurred: {ex.Message}");
+                _logger.LogError(ex, "An unexpected error occurred");
                 return DateTime.MinValue; // Return an invalid date to signal error
             }
         }
@@ -148,7 +149,7 @@ namespace WorkdayCalendar.Service
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error moving to next working day: {ex.Message}");
+                _logger.LogError(ex, "Error moving to next working day");
                 return DateTime.MinValue; // Return invalid date to indicate error
             }
         }
@@ -170,7 +171,7 @@ namespace WorkdayCalendar.Service
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error moving to previous working day: {ex.Message}");
+                _logger.LogError(ex, "Error moving to previous working day");
                 return DateTime.MinValue;
             }
         }
@@ -205,7 +206,7 @@ namespace WorkdayCalendar.Service
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error checking working day: {ex.Message}");
+                _logger.LogError(ex, "Error checking working day");
                 return false; // Return false if an error occurs during the check
             }
         }

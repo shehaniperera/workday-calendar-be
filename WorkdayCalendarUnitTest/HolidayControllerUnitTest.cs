@@ -194,10 +194,10 @@ namespace WorkdayCalendarUnitTest
 
         }
 
-        [TestCase("da2ab810-457c-45ad-b004-9546e497aad6")]
+        [TestCase("da2ab810-457c-45ad-b004-9546e457aad6")]
         public async Task DeleteHoliday_ReturnsExpectedResult(Guid id)
         {
-            var requestUrl = $"/api/holiday/DeleteHolidaysById?id={id}";
+            var requestUrl = $"/api/holiday/DeleteHoliday?id={id}";
 
             // DELETE
             var response = await _client.DeleteAsync(requestUrl);

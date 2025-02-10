@@ -14,7 +14,7 @@ namespace WorkdayCalendar.Controllers
         private readonly ILogger<WorkdayController> _logger;
         private readonly IConfiguration _configuration;
 
-        // Dependency Injection for WorkdayService and ILogger
+        // WorkdayService and ILogger
         public WorkdayController(WorkdayService workdayService, ILogger<WorkdayController> logger, IConfiguration configuration)
         {
             _workdayService = workdayService;

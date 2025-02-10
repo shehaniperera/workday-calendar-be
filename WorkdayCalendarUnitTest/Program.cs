@@ -68,7 +68,7 @@ app.MapPatch("/api/holiday/UpdateHoliday", async (Holiday holiday, IHolidayRepos
     return Results.Ok(new { message = "Holiday updated successfully!" });
 });
 
-app.MapDelete("/api/holiday/DeleteHolidaysById", async (IHolidayRepository holidayRepository, Guid id) =>
+app.MapDelete("/api/holiday/DeleteHoliday", async (IHolidayRepository holidayRepository, Guid id) =>
 {
     var holidays = await holidayRepository.DeleteAsync(id);
     return Results.Ok(new { Result = holidays });

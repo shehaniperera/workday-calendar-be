@@ -13,7 +13,7 @@ namespace WorkdayCalendar.Controllers
         private readonly IHolidayRepository _holidayRepository;
         private readonly ILogger<HolidayController> _logger;
 
-        // Dependency Injection for HolidayService and ILogger
+        // HolidayService and ILogger
         public HolidayController(IHolidayRepository holidayRepository, ILogger<HolidayController> logger)
         {
             _holidayRepository = holidayRepository;
