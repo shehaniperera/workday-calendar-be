@@ -27,7 +27,11 @@ namespace WorkdayCalendar.Service
                 throw new ArgumentNullException(nameof(holiday), Constants.ExceptionMessages.HolidayNullError);
             }
 
-            // 
+            if (_validatorService.IsEmptyHoliday(holiday))
+            {
+                throw new ArgumentNullException(nameof(holiday), Constants.ExceptionMessages.HolidayNullError);
+            }
+
             if (await _validatorService.HolidayExistsAsync(holiday))
             {
                 return false;  // Holiday exists

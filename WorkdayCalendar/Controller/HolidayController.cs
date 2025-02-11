@@ -12,20 +12,22 @@ namespace WorkdayCalendar.Controllers
     public class HolidayController : ControllerBase
     {
         private readonly IHolidayService _holidayService;
+        private readonly IHolidayValidatorService _holidayValidatorService;
 
         // Constructor to inject the HolidayService
-        public HolidayController(IHolidayService holidayService)
+        public HolidayController(IHolidayService holidayService, IHolidayValidatorService holidayValidatorService)
         {
             _holidayService = holidayService;
+            _holidayValidatorService = holidayValidatorService;
         }
 
         [HttpPost("AddHoliday")]
         public async Task<ActionResult> AddHoliday([FromBody] Holiday holiday)
         {
 
-            if (holiday == null)
+            if (!_holidayValidatorService.IsValidHoliday(holiday, out string errorMessage))
             {
-                return BadRequest(new { message = "Holiday cannot be null" });
+                return BadRequest(new { message = errorMessage });
             }
 
             if (!ModelState.IsValid)
@@ -39,10 +41,8 @@ namespace WorkdayCalendar.Controllers
             {
                 return Ok(new { message = Constants.SucccessMessages.AddHolidaySucessMessage });
             }
-            else
-            {
-                return Conflict(new { message = Constants.ExceptionMessages.HolidayExistsError });
-            }
+
+            return Conflict(new { message = "Holiday already exists" });
         }
 
         [HttpGet("GetHolidays")]
@@ -82,8 +82,10 @@ namespace WorkdayCalendar.Controllers
         [HttpPatch("UpdateHoliday")]
         public async Task<ActionResult> UpdateHoliday([FromBody] Holiday holiday)
         {
-            if (holiday == null)
-                return BadRequest(Constants.ExceptionMessages.InvalidRequest);
+            if (!_holidayValidatorService.IsValidHoliday(holiday, out string errorMessage))
+            {
+                return BadRequest(new { message = errorMessage });
+            }
 
             if (!ModelState.IsValid)
             {

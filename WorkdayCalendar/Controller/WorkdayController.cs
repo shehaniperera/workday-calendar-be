@@ -10,16 +10,14 @@ namespace WorkdayCalendar.Controllers
     public class WorkdayController : ControllerBase
     {
         private readonly IWorkdayCalculationService _workdayService;
-        private readonly ILogger<WorkdayController> _logger;
         private readonly IConfiguration _configuration;
         private readonly IWorkdayValidationService _validationService;
         private readonly IErrorHandlingService _handleExceptionAsync;
 
         // WorkdayService ,  ILogger , Validation service , Error Handling service
-        public WorkdayController(IWorkdayCalculationService workdayService, ILogger<WorkdayController> logger, IConfiguration configuration, IWorkdayValidationService validationService, IErrorHandlingService handleExceptionAsync)
+        public WorkdayController(IWorkdayCalculationService workdayService, IConfiguration configuration, IWorkdayValidationService validationService, IErrorHandlingService handleExceptionAsync)
         {
             _workdayService = workdayService;
-            _logger = logger;
             _configuration = configuration;
             _validationService = validationService;
             _handleExceptionAsync = handleExceptionAsync;

@@ -2,13 +2,13 @@
 using Microsoft.Extensions.DependencyInjection;
 using WorkdayCalendar.IRepository;
 using WorkdayCalendar.Models;
-using WorkdayCalendar.Repository;
 using Microsoft.EntityFrameworkCore;
 using WorkdayCalendar.Data;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using WorkdayCalendar.IService;
 using WorkdayCalendar.Service;
-using Microsoft.Extensions.Configuration;
+using WorkdayCalendar.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,66 +16,88 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<WorkdayCalendarDBContext>(options =>
     options.UseInMemoryDatabase("TestDatabase"));
 
-//  services registry
+// Repo Registry
 builder.Services.AddScoped<IHolidayRepository, HolidayRepository>();
-builder.Services.AddScoped<IWorkdayService, WorkdayService>();
 
-// config registry
+// Services Registry
+builder.Services.AddScoped<IHolidayService, HolidayService>();
+builder.Services.AddScoped<IHolidayValidatorService, HolidayValidatorService>();
+
+builder.Services.AddScoped<IWorkdayCalculationService, WorkdayCalculationService>();
+builder.Services.AddScoped<IWorkdayValidationService, WorkdayValidationService>();
+builder.Services.AddScoped<IDateModificationService, DateModificationService>();
+
+// Singleton Services
+builder.Services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
 builder.Services.AddSingleton<IConfiguration>(builder.Configuration);
+
 
 
 var app = builder.Build();
 
-app.MapPost("/api/holiday/AddHoliday", async (Holiday holiday, IHolidayRepository holidayRepository) =>
+app.MapPost("/api/holiday/AddHoliday", async (Holiday holiday, IHolidayService holidayService) =>
 {
     if (holiday == null)
-        return Results.BadRequest("Invalid request.");
+        return Results.BadRequest(new { message = "Invalid request." });
 
-    await holidayRepository.Add(holiday);
+    if (holiday.Id == Guid.Empty || holiday.Date == DateTime.MinValue || string.IsNullOrEmpty(holiday.Name) || holiday.IsRecurring == null)
+        return Results.BadRequest(new { message = "Holiday has incomplete or empty values" });
+
+    await holidayService.AddHolidayAsync(holiday);
     return Results.Ok(new { message = "Holiday added successfully!" });
 });
 
-app.MapGet("/api/holiday/GetHolidays", async (IHolidayRepository holidayRepository) =>
+app.MapGet("/api/holiday/GetHolidays", async (IHolidayService IHolidayService) =>
 {
-    var holidays = await holidayRepository.GetAllAsync();
-    return Results.Ok(new { Result = holidays });
+    var holidays = await IHolidayService.GetAllHolidaysAsync();
+    return Results.Ok(new { Result = holidays, Count = holidays.Count() });
 });
 
-app.MapGet("/api/holiday/GetRecurringHolidays", async (IHolidayRepository holidayRepository) =>
+app.MapGet("/api/holiday/GetRecurringHolidays", async (IHolidayService holidayService) =>
 {
-    var holidays = await holidayRepository.GetRecurringHolidaysAsync();
-    return Results.Ok(new { Result = holidays });
+    var holidays = await holidayService.GetRecurringHolidaysAsync();
+    return Results.Ok(new { Result = holidays, Count = holidays.Count() });
 });
 
-app.MapGet("/api/holiday/GetFixedHolidays", async (IHolidayRepository holidayRepository) =>
+app.MapGet("/api/holiday/GetFixedHolidays", async (IHolidayService holidayService) =>
 {
-    var holidays = await holidayRepository.GetFixedHolidaysAsync();
-    return Results.Ok(new { Result = holidays });
+    var holidays = await holidayService.GetFixedHolidaysAsync();
+    return Results.Ok(new { Result = holidays, Count = holidays.Count() });
 });
 
-app.MapGet("/api/holiday/GetHolidaysById", async (IHolidayRepository holidayRepository,Guid id) =>
+app.MapGet("/api/holiday/GetHolidaysById", async (IHolidayService holidayService, Guid id) =>
 {
-    var holidays = await holidayRepository.GetByIdAsync(id);
-    return Results.Ok(new { Result = holidays });
+    var holiday = await holidayService.GetHolidayByIdAsync(id);
+    return Results.Ok(new { Result = holiday });
 });
 
-app.MapPatch("/api/holiday/UpdateHoliday", async (Holiday holiday, IHolidayRepository holidayRepository) =>
+
+app.MapPost("/api/holiday/UpdateHoliday", async (Holiday holiday, IHolidayService holidayService) =>
 {
     if (holiday == null)
-        return Results.BadRequest("Invalid request.");
+        return Results.BadRequest(new { message = "Invalid request." });
 
-    await holidayRepository.Update(holiday);
+    if (holiday.Id == Guid.Empty || holiday.Date == DateTime.MinValue || string.IsNullOrEmpty(holiday.Name) || holiday.IsRecurring == null)
+        return Results.BadRequest(new { message = "Holiday has incomplete or empty values" });
+
+    await holidayService.UpdateHolidayAsync(holiday);
     return Results.Ok(new { message = "Holiday updated successfully!" });
 });
 
-app.MapDelete("/api/holiday/DeleteHoliday", async (IHolidayRepository holidayRepository, Guid id) =>
+app.MapDelete("/api/holiday/DeleteHoliday", async (IHolidayService holidayService, Guid id) =>
 {
-    var holidays = await holidayRepository.DeleteAsync(id);
-    return Results.Ok(new { Result = holidays });
+    var success = await holidayService.DeleteHolidayAsync(id);
+
+    if (success)
+    {
+        return Results.Ok(new { message = "Holiday deleted successfully!" });
+    }
+
+    return Results.NotFound(new { message = "Holiday not found" });
 });
 
 
-app.MapPost("/api/workday/CalculateWorkDay", async (WorkdayCalculation request, IWorkdayService workdayService) =>
+app.MapPost("/api/workday/CalculateWorkDay", async (WorkdayCalculation request, IWorkdayCalculationService workdayService) =>
 {
     if (request == null)
         return Results.BadRequest("Invalid workday calculation request.");
@@ -85,8 +107,7 @@ app.MapPost("/api/workday/CalculateWorkDay", async (WorkdayCalculation request, 
     if (resultDateTime == DateTime.MinValue)
         return Results.Problem("Error occurred while calculating the workday.");
 
-    return Results.Ok(new { calculatedWorkday = resultDateTime });
+    return Results.Ok(new { result = resultDateTime });
 });
-
 
 app.Run();
