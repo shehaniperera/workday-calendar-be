@@ -1,16 +1,20 @@
 ![image](https://github.com/user-attachments/assets/1bad1063-5fca-4ed6-bc5f-4d928a153111)
 
+![image](https://github.com/user-attachments/assets/56065dd3-1824-4930-a702-405a72b57def)
+
+![image](https://github.com/user-attachments/assets/5db975d5-2331-45de-b91f-71b7b64e387e)
+
+![image](https://github.com/user-attachments/assets/1bccf534-2874-4d5d-818a-374f16e798fb)
+
+
 Tests
 
-![image](https://github.com/user-attachments/assets/6db6319e-5622-4819-9e76-fe131513c260)
+![image](https://github.com/user-attachments/assets/212c82ce-8a4a-4a44-88eb-d676d92fcc32)
 
-Test for fail scenarios
-
-![image](https://github.com/user-attachments/assets/1a4f6400-bc79-4e3c-bd3e-b852c702fbfb)
-
-![image](https://github.com/user-attachments/assets/cfcc9774-bd34-4c5f-b3a4-7f295fdf05e1)
-
+![image](https://github.com/user-attachments/assets/125585d0-969f-43b4-9f94-0307f8f9184d)
 
 
 Dev - ASP.Net Core
+
+Followed Clean Code Architecture and SOLID Principles
 
