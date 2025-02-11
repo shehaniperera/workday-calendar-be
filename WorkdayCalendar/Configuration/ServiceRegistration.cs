@@ -9,26 +9,44 @@ namespace WorkdayCalendar.Configuration
 {
     public static class ServiceRegistration
     {
+        // Main registration method
         public static void AddServices(this IServiceCollection services, IConfiguration configuration)
         {
-            // DbContext Registry
+            services.AddDatabaseServices(configuration);
+            services.AddLoggingServices();
+            services.AddRepositoryServices();
+            services.AddApplicationServices();
+        }
+
+        //  DbContext Registry
+        private static void AddDatabaseServices(this IServiceCollection services, IConfiguration configuration)
+        {
             services.AddDbContext<WorkdayCalendarDBContext>(options =>
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")));
+        }
 
-
+        // Logging-related services Registry
+        private static void AddLoggingServices(this IServiceCollection services)
+        {
             services.AddLogging();
+        }
 
-            // Repo Registry
+        // Reposito Registry
+        private static void AddRepositoryServices(this IServiceCollection services)
+        {
             services.AddScoped<IHolidayRepository, HolidayRepository>();
+        }
 
-            // Services Registry
+        // Application Services Registry
+        private static void AddApplicationServices(this IServiceCollection services)
+        {
             services.AddScoped<IHolidayService, HolidayService>();
             services.AddScoped<IHolidayValidatorService, HolidayValidatorService>();
-
             services.AddScoped<IWorkdayCalculationService, WorkdayCalculationService>();
             services.AddScoped<IWorkdayValidationService, WorkdayValidationService>();
             services.AddScoped<IDateModificationService, DateModificationService>();
 
+            // Singleton service for error
             services.AddSingleton<IErrorHandlingService, ErrorHandlingService>();
         }
     }
