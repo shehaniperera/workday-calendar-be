@@ -1,5 +1,6 @@
 ﻿using WorkdayCalendar.IService;
 using WorkdayCalendar.Models;
+using WorkdayCalendar.Utilities;
 namespace WorkdayCalendar.Service
 {
     public class WorkdayValidationService : IWorkdayValidationService
@@ -11,18 +12,17 @@ namespace WorkdayCalendar.Service
             // Validate StartDateTime
             if (request.StartDateTime == default)
             {
-                validationErrors.Add("StartDateTime must be a valid DateTime.");
+                validationErrors.Add(Constants.ValidationMessages.ValidStartDate);
             }
             else if (request.StartDateTime > DateTime.Now)
             {
-                validationErrors.Add("StartDateTime cannot be in the future.");
+                validationErrors.Add(Constants.ValidationMessages.FutureStart);
             }
 
-          
-            // Validate Holidays (can be an empty array, so handle accordingly)
+            // Validate Holidays
             if (request.Holidays == null)
             {
-                validationErrors.Add("Holidays list cannot be null.");
+                validationErrors.Add(Constants.ValidationMessages.HolidayList);
             }
             else
             {
@@ -30,7 +30,7 @@ namespace WorkdayCalendar.Service
                 {
                     if (holiday.Date == default)
                     {
-                        validationErrors.Add("Holiday Date must be a valid Date.");
+                        validationErrors.Add(Constants.ValidationMessages.ValidHoliday);
                     }
                 }
             }
@@ -43,12 +43,12 @@ namespace WorkdayCalendar.Service
 
                 if (workingEnd <= workingStart)
                 {
-                    validationErrors.Add("Working End time must be after Start time.");
+                    validationErrors.Add(Constants.ValidationMessages.WorkEndTime);
                 }
             }
             catch (FormatException)
             {
-                validationErrors.Add("WorkingHours Start and End must be valid times.");
+                validationErrors.Add(Constants.ValidationMessages.ValidWorkTimes);
             }
 
 

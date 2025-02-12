@@ -1,10 +1,5 @@
 ﻿using WorkdayCalendar.Models;
 using WorkdayCalendar.IService;
-using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace WorkdayCalendar.Service
 {
@@ -20,7 +15,7 @@ namespace WorkdayCalendar.Service
         }
 
         // Next working day
-        public async Task<DateTime> MoveToNextWorkingDay(DateTime currentDateTime, List<Holiday> holidays, TimeSpan workingStartTime)
+        public DateTime MoveToNextWorkingDay(DateTime currentDateTime, List<Holiday> holidays, TimeSpan workingStartTime)
         {
             try
             {
@@ -38,13 +33,13 @@ namespace WorkdayCalendar.Service
             }
             catch (Exception ex)
             {
-                await _errorHandlingService.HandleExceptionAsync(ex);
+                _errorHandlingService.HandleException(ex);
                 throw new InvalidOperationException("Error moving to next working day", ex);
             }
         }
 
         // Previous working day
-        public async Task<DateTime> MoveToPreviousWorkingDay(DateTime currentDateTime, List<Holiday> holidays, TimeSpan workingStartTime, TimeSpan workingEndTime)
+        public DateTime MoveToPreviousWorkingDay(DateTime currentDateTime, List<Holiday> holidays, TimeSpan workingStartTime, TimeSpan workingEndTime)
         {
             try
             {
@@ -60,11 +55,10 @@ namespace WorkdayCalendar.Service
             }
             catch (Exception ex)
             {
-                await _errorHandlingService.HandleExceptionAsync(ex);
+                _errorHandlingService.HandleException(ex);
                 throw new InvalidOperationException("Error moving to previous working day", ex);
             }
         }
-
 
         // given date is a working day, exclude weekends and holidays
         public bool IsWorkingDay(DateTime date, List<Holiday> holidays)
@@ -93,7 +87,7 @@ namespace WorkdayCalendar.Service
             }
             catch (Exception ex)
             {
-                 _errorHandlingService.HandleExceptionAsync(ex);
+                 _errorHandlingService.HandleException(ex);
                 throw new InvalidOperationException("Error checking if date is a working day", ex);
             }
         }

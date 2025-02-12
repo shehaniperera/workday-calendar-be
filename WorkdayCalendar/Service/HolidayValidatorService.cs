@@ -1,6 +1,7 @@
 ﻿using WorkdayCalendar.IRepository;
 using WorkdayCalendar.IService;
 using WorkdayCalendar.Models;
+using WorkdayCalendar.Utilities;
 namespace WorkdayCalendar.Service
 {
     public class HolidayValidatorService : IHolidayValidatorService
@@ -30,23 +31,22 @@ namespace WorkdayCalendar.Service
             // Check if holiday is null
             if (holiday == null)
             {
-                errorMessage = "Holiday cannot be null";
+                errorMessage = Constants.ExceptionMessages.HolidayNullError;
                 return false;
             }
 
             else if (IsEmptyHoliday(holiday))
             {
-                errorMessage = "Holiday has incomplete or empty values";
+                errorMessage = Constants.ValidationMessages.HolidayIncomplete;
                 return false;
             }
 
             //  holiday date is empty (DateTime.MinValue)
             else if (holiday.Date == DateTime.MinValue)
             {
-                errorMessage = "Holiday date cannot be empty";
+                errorMessage = Constants.ValidationMessages.HolidayDateEmpty;
                 return false;
             }
-
         
             return true; // valid
         }

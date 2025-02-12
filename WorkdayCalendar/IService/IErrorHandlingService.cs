@@ -4,6 +4,6 @@ namespace WorkdayCalendar.IService
 {
     public interface IErrorHandlingService
     {
-        Task<ActionResult> HandleExceptionAsync(Exception ex);
+        ActionResult HandleException(Exception ex);
     }
 }

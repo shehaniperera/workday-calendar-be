@@ -7,6 +7,7 @@ using WorkdayCalendar.Models;
 using System.Net.Http.Json;
 using System.Net;
 using System.Text.Json;
+using WorkdayCalendar.Utilities;
 
 namespace WorkdayCalendarUnitTest
 {
@@ -151,14 +152,20 @@ namespace WorkdayCalendarUnitTest
 
         }
 
-
-        [TestCase("2004-05-24T15:07:00",0.25,"2004-05-25T09:06:00","[]")]
-        [TestCase("InvalidDate", 0.25, "2004-05-25T09:07:00", "[]")]
-        public async Task CalculateWorkday_ReturnsUnexpectedResult(string startDateTime, double workingDays, string expectedResult, string holidaysList)
+        [TestCase("Invalid Date", 0.25, "2004-05-25T09:07:00", "[]")]
+        public async Task CalculateWorkday_ReturnsValidationResult(string startDateTime, double workingDays, string expectedResult, string holidaysList)
         {
+
+            DateTime parsedStartDateTime;
+
+            if (!DateTime.TryParse(startDateTime, out parsedStartDateTime))
+            {
+                parsedStartDateTime = DateTime.MinValue;  // Invalid date if parsing fails
+            }
+
             var request = new WorkdayCalculation
             {
-                StartDateTime = DateTime.Parse(startDateTime),
+                StartDateTime = parsedStartDateTime,
                 WorkingDays = workingDays,
                 Holidays = new List<Holiday>(),
                 WorkingHours = new WorkingHours { Start = new TimeSpan(8, 0, 0), End = new TimeSpan(16, 0, 0) }
@@ -167,28 +174,22 @@ namespace WorkdayCalendarUnitTest
             // POST - CalculateWorkday
             var response = await _client.PostAsJsonAsync("/api/workday/CalculateWorkDay", request);
 
-            // Verify response status code - OK
-            Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+            // Verify response status code - BadRequest (400)
+            Assert.AreEqual(HttpStatusCode.BadRequest, response.StatusCode);
 
             var responseBody = await response.Content.ReadFromJsonAsync<JsonElement>();
 
-            if (responseBody.TryGetProperty("result", out var calculatedWorkday))
+            if (responseBody.TryGetProperty("message", out var errorMessage))
             {
-                Assert.NotNull(calculatedWorkday);
-                string calculatedDateString = calculatedWorkday.GetString();
-                DateTime parsedDate = DateTime.Parse(calculatedDateString);
-
-                var expectedDate = new DateTime(2004, 5, 25, 10, 7, 0);  // Incorrect expected date 
-
-                Assert.AreEqual(expectedDate, parsedDate);  // Compare with expected DateTime result
+                // Verify that the error message matches the expected one for invalid date
+                Assert.AreEqual(Constants.ValidationMessages.ValidStartDate, errorMessage.GetString());
             }
             else
             {
-                // Fail the test
-                Assert.Fail("The 'calculatedWorkday' was not found in the response.");
+                // If no error message is found, fail the test
+                Assert.Fail("Expected error message 'Invalid date format' not found in the response.");
             }
         }
-
 
         [TearDown]
         public void TearDown()

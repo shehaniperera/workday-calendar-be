@@ -1,5 +1,6 @@
 ﻿using WorkdayCalendar.Models;
 using WorkdayCalendar.IService;
+using WorkdayCalendar.Utilities;
 
 namespace WorkdayCalendar.Service
 {
@@ -26,33 +27,15 @@ namespace WorkdayCalendar.Service
 
             try
             {
-                // If working hours are not defined, get the default values from configs
-                if (request.WorkingHours == null)
-                {
-                    request.WorkingHours = new WorkingHours();
-                }
 
-                if (request.WorkingHours.Start == TimeSpan.Zero) // Default Start time
-                {
-                    var workHoursStartString = _configuration.GetValue<string>("WorkdaySettings:WorkingHours:Start");
-                    request.WorkingHours.Start = TimeSpan.Parse(workHoursStartString);
-                }
+                request.WorkingHours ??= new WorkingHours();
 
-                if (request.WorkingHours.End == TimeSpan.Zero) // Default End time
-                {
-                    var workHoursEndString = _configuration.GetValue<string>("WorkdaySettings:WorkingHours:End");
-                    request.WorkingHours.End = TimeSpan.Parse(workHoursEndString);
-                }
+                // Set default times, get from consigs
+                request.WorkingHours.Start = SetDefaultWorkingTime(request.WorkingHours.Start, "WorkdaySettings:WorkingHours:Start");
+                request.WorkingHours.End = SetDefaultWorkingTime(request.WorkingHours.End, "WorkdaySettings:WorkingHours:End");
 
-                if (resultDateTime.TimeOfDay < request.WorkingHours.Start)
-                {
-                    resultDateTime = resultDateTime.Date + request.WorkingHours.Start;
-                }
-                // if working hours, move to the next work day
-                else if (resultDateTime.TimeOfDay >= request.WorkingHours.End)
-                {
-                    resultDateTime = await _dateModificationService.MoveToNextWorkingDay(resultDateTime, holidays, request.WorkingHours.Start);
-                }
+                // adjust working hours
+                resultDateTime = AdjustToWorkingHours(resultDateTime, request.WorkingHours.Start, request.WorkingHours.End, holidays);
 
                 double remainingDays = request.WorkingDays;
 
@@ -64,50 +47,29 @@ namespace WorkdayCalendar.Service
                         {
                             if (remainingDays > 0) // add working days
                             {
-                                // Calculate remaining work hours for current day
-                                double remainingWorkHours = (request.WorkingHours.End - resultDateTime.TimeOfDay).TotalHours;
-                                double workingHours = Math.Min(remainingWorkHours, remainingDays * 8);
 
-                                resultDateTime = resultDateTime.AddHours(workingHours);
-                                remainingDays -= workingHours / 8;
+                                // Calculate remaining work hours for current day
+                                (resultDateTime, remainingDays) = AddWorkingDays(resultDateTime, holidays, remainingDays, request.WorkingHours);
                             }
                             else if (remainingDays < 0) 
                             {
-                                // Calculate remaining work hours from the start of current day
-                                double remainingWorkHours = (resultDateTime.TimeOfDay - request.WorkingHours.Start).TotalHours;
-
-                                if (remainingWorkHours < 0) 
-                                {
-
-                                 
-                                    resultDateTime = await _dateModificationService.MoveToPreviousWorkingDay(resultDateTime, holidays, request.WorkingHours.Start, request.WorkingHours.End);
-                                    remainingWorkHours = (resultDateTime.TimeOfDay - request.WorkingHours.Start).TotalHours;
-                                }
-
-                                double workingHours = Math.Min(remainingWorkHours, -remainingDays * 8);
-                                resultDateTime = resultDateTime.AddHours(-workingHours);
-                                remainingDays += workingHours / 8; // Add full days to remaining days
-
-                                if (remainingWorkHours <= 0)
-                                {
-                                    resultDateTime = await _dateModificationService.MoveToPreviousWorkingDay(resultDateTime, holidays, request.WorkingHours.Start, request.WorkingHours.End);
-                                }
+                                (resultDateTime, remainingDays) = SubtractWorkingDays(resultDateTime, holidays, remainingDays, request.WorkingHours);
                             }
                         }
                         else
                         {
-                            _logger.LogInformation("Not a working day. Skipping to next day.");
+                            _logger.LogInformation(Constants.ValidationMessages.WorkdaySkip);
                         }
 
                         // If adding working days and the current time is above working hours, move to the next working day
                         if (resultDateTime.TimeOfDay >= request.WorkingHours.End && remainingDays > 0)
                         {
-                            resultDateTime = await _dateModificationService.MoveToNextWorkingDay(resultDateTime, holidays, request.WorkingHours.Start);
+                            resultDateTime =  _dateModificationService.MoveToNextWorkingDay(resultDateTime, holidays, request.WorkingHours.Start);
                         }
                         else if (resultDateTime.TimeOfDay < request.WorkingHours.Start && remainingDays < 0)
                         {
                             // If subtracting working days and time is before working hours, move to the previous working day
-                            resultDateTime = await _dateModificationService.MoveToPreviousWorkingDay(resultDateTime, holidays, request.WorkingHours.Start, request.WorkingHours.End);
+                            resultDateTime = _dateModificationService.MoveToPreviousWorkingDay(resultDateTime, holidays, request.WorkingHours.Start, request.WorkingHours.End);
                         }
 
                         if (Math.Abs(remainingDays) < 0.1) 
@@ -117,7 +79,7 @@ namespace WorkdayCalendar.Service
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "An error occurred during workday calculation");
+                        _logger.LogError(ex, Constants.ExceptionMessages.WorkdayCalculationError);
                         return DateTime.MinValue; // Return invalid date  error
                     }
                 }
@@ -126,9 +88,81 @@ namespace WorkdayCalendar.Service
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "An unexpected error occurred while calculating workday");
+                _logger.LogError(ex, Constants.ExceptionMessages.UnexpectedWorkdayCalculationError);
                 return DateTime.MinValue; // Return an invalid date to  error
             }
         }
+
+        private TimeSpan SetDefaultWorkingTime(TimeSpan currentTime, string configKey)
+        {
+            if (currentTime == TimeSpan.Zero)
+            {
+                var defaultTimeString = _configuration.GetValue<string>(configKey);
+                return TimeSpan.Parse(defaultTimeString);
+            }
+            return currentTime;
+        }
+
+
+        private DateTime AdjustToWorkingHours(DateTime dateTime, TimeSpan workStart, TimeSpan workEnd, List<Holiday> holidays)
+        {
+            //  set the time to the start (current time - earlier than the start of workday)
+            if (dateTime.TimeOfDay < workStart)
+            {
+                return dateTime.Date + workStart;
+            }
+
+            // if working hours, move to the next work day (current time - later than or equal to the end of workday)
+            else if (dateTime.TimeOfDay >= workEnd)
+            {
+                return _dateModificationService.MoveToNextWorkingDay(dateTime, holidays, workStart);
+            }
+
+            return dateTime;
+        }
+
+        private (DateTime, double) AddWorkingDays(DateTime dateTime, List<Holiday> holidays, double remainingDays, WorkingHours workingHours)
+        {
+            // remaining work hours for the current day
+            double remainingWorkHours = (workingHours.End - dateTime.TimeOfDay).TotalHours;
+            double workingHoursToAdd = Math.Min(remainingWorkHours, remainingDays * 8);
+
+            // Add the calculated working hours
+            dateTime = dateTime.AddHours(workingHoursToAdd);
+
+            // Reduce remainingDays based on added work hours
+            remainingDays -= workingHoursToAdd / 8;
+
+            return (dateTime, remainingDays);
+        }
+
+        private (DateTime, double) SubtractWorkingDays(DateTime dateTime, List<Holiday> holidays, double remainingDays, WorkingHours workingHours)
+        {
+            // remaining work hours from the start of current day
+            double remainingWorkHours = (dateTime.TimeOfDay - workingHours.Start).TotalHours;
+
+            // If remainingWorkHours is negative - move to the previous work day
+            if (remainingWorkHours < 0)
+            {
+                dateTime = _dateModificationService.MoveToPreviousWorkingDay(dateTime, holidays, workingHours.Start, workingHours.End);
+                remainingWorkHours = (dateTime.TimeOfDay - workingHours.Start).TotalHours;
+            }
+
+            //hours to subtract - based on remaining days
+            double substractWorkingHours = Math.Min(remainingWorkHours, -remainingDays * 8);
+            dateTime = dateTime.AddHours(-substractWorkingHours);
+            remainingDays += substractWorkingHours / 8; // Add full days to remaining days
+
+            // no work hours are left - current day, move to previous work day
+            if (remainingWorkHours <= 0)
+            {
+                dateTime = _dateModificationService.MoveToPreviousWorkingDay(dateTime, holidays, workingHours.Start, workingHours.End);
+            }
+
+            return (dateTime, remainingDays);
+        }
+
+
+
     }
 }

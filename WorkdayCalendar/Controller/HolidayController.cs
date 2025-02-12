@@ -1,6 +1,4 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using WorkdayCalendar.Exceptions;
-using WorkdayCalendar.IRepository;
 using WorkdayCalendar.IService;
 using WorkdayCalendar.Models;
 using WorkdayCalendar.Utilities;
@@ -42,7 +40,7 @@ namespace WorkdayCalendar.Controllers
                 return Ok(new { message = Constants.SucccessMessages.AddHolidaySucessMessage });
             }
 
-            return Conflict(new { message = "Holiday already exists" });
+            return Conflict(new { message = Constants.ExceptionMessages.HolidayExistsError });
         }
 
         [HttpGet("GetHolidays")]

@@ -51,7 +51,7 @@ namespace WorkdayCalendar.Controllers
             }
             catch (Exception ex)
             {
-                return await _handleExceptionAsync.HandleExceptionAsync(ex);
+                return _handleExceptionAsync.HandleException(ex);
             }
         }
     }

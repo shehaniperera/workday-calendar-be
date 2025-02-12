@@ -37,8 +37,24 @@ namespace WorkdayCalendar.Utilities
             public const string FetchDateNameException = "An error occurred while fetching the holiday by date and name";
             public const string FixedHolidayException = "An error occurred while fetching fixed holidays";
             public const string RecurringHolidayException = "An error occurred while fetching recurring holidays";
+            public const string UnexpectedWorkdayCalculationError = "An unexpected error occurred while calculating workday";
+            public const string InvalidInputError = "Invalid Input Provided";
         }
 
+
+        public static class ValidationMessages
+        {
+            public const string ValidStartDate = "StartDateTime must be a valid DateTime.";
+            public const string HolidayIncomplete = "Holiday has incomplete or empty values";
+            public const string HolidayDateEmpty = "Holiday date cannot be empty";
+            public const string HolidayList = "Holidays list cannot be null.";
+            public const string ValidHoliday = "Holiday Date must be a valid Date.";
+            public const string WorkEndTime = "Working End time must be after Start time.";
+            public const string ValidWorkTimes = "WorkingHours Start and End must be valid times.";
+            public const string WorkdaySkip = "Not a working day. Skipping to next day";
+            public const string FutureStart = "StartDateTime cannot be in the future.";
+            public const string WorkdayCalculationInvalid = "Invalid workday calculation request";
+        }
 
         public static class DBExceptionMessages
         {

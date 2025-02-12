@@ -19,7 +19,7 @@ namespace WorkdayCalendar.Services
             _logger = logger;
         }
 
-        public async Task<ActionResult> HandleExceptionAsync(Exception ex)
+        public ActionResult HandleException(Exception ex)
         {
             // log exceptions
             _logger.LogError($"{Constants.ExceptionMessages.ExceptionError}: {ex.Message}, StackTrace: {ex.StackTrace}");
@@ -27,7 +27,7 @@ namespace WorkdayCalendar.Services
             // specific exceptions
             if (ex is ArgumentException)
             {
-                return new BadRequestObjectResult(new { message = "Invalid input provided" });
+                return new BadRequestObjectResult(new { message = Constants.ExceptionMessages.InvalidInputError });
             }
 
             if (ex is NotFoundException notFoundException)
@@ -43,5 +43,6 @@ namespace WorkdayCalendar.Services
                 StatusCode = (int)HttpStatusCode.InternalServerError
             };
         }
+
     }
 }
